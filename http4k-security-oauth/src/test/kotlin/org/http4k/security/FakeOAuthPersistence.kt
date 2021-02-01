@@ -3,6 +3,8 @@ package org.http4k.security
 import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.Uri
+import org.http4k.security.openid.CodeChallenge
+import org.http4k.security.openid.CodeVerifier
 import org.http4k.security.openid.IdToken
 import org.http4k.security.openid.Nonce
 
@@ -36,6 +38,14 @@ class FakeOAuthPersistence : OAuthPersistence {
     override fun retrieveNonce(request: Request): Nonce? = nonce
 
     override fun retrieveToken(request: Request): AccessToken? = accessToken
+
+    override fun assignCodeVerifier(redirect: Response, codeVerifier: CodeVerifier): Response {
+        TODO("Not yet implemented")
+    }
+
+    override fun retrieveCodeVerifier(request: Request): CodeVerifier {
+        TODO("Not yet implemented")
+    }
 
     override fun retrieveCsrf(request: Request): CrossSiteRequestForgeryToken? = csrf
 

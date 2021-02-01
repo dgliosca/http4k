@@ -19,6 +19,10 @@ import org.http4k.security.OAuthPersistence
 import org.http4k.security.OAuthProvider
 import org.http4k.security.OAuthProviderConfig
 import org.http4k.security.ResponseType
+import org.http4k.security.openid.CodeChallenge
+import org.http4k.security.openid.CodeChallengeMethod
+import org.http4k.security.openid.CodeChallengeMethod.*
+import org.http4k.security.openid.PKCECodesGenerator
 import org.http4k.security.openid.IdTokenConsumer
 import org.http4k.util.FixedClock
 
@@ -73,7 +77,10 @@ fun oauthClientApp(
     responseType: ResponseType = ResponseType.Code,
     idTokenConsumer: IdTokenConsumer = IdTokenConsumer.NoOp,
     scopes: List<String> = listOf("name", "age"),
-    persistence: OAuthPersistence = InsecureCookieBasedOAuthPersistence("oauthTest")
+    persistence: OAuthPersistence = InsecureCookieBasedOAuthPersistence("oauthTest"),
+    PKCECodesGenerator: PKCECodesGenerator = object : PKCECodesGenerator {
+        override val codeChallengeMethod = Plain
+    }
 ): RoutingHttpHandler {
 
     val oauthProvider = OAuthProvider(
@@ -86,7 +93,8 @@ fun oauthClientApp(
         scopes,
         persistence,
         responseType = responseType,
-        idTokenConsumer = idTokenConsumer
+        idTokenConsumer = idTokenConsumer,
+        pkceCodesGenerator = PKCECodesGenerator
     )
 
     return routes(

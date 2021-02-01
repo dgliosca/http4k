@@ -12,6 +12,8 @@ import org.http4k.core.Uri
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.invalidateCookie
+import org.http4k.security.openid.CodeChallenge
+import org.http4k.security.openid.CodeVerifier
 import org.http4k.security.openid.Nonce
 import org.http4k.util.FixedClock
 import org.junit.jupiter.api.Test
@@ -76,6 +78,14 @@ class InsecureCookieBasedOAuthPersistenceTest {
     fun `adds nonce as a cookie to the auth redirect`() {
         assertThat(persistence.assignNonce(Response(TEMPORARY_REDIRECT), Nonce("nonceValue")), equalTo(
             Response(TEMPORARY_REDIRECT).cookie(Cookie("prefixNonce", "nonceValue",
+                expires = expectedCookieExpiry, path = "/"))
+        ))
+    }
+
+    @Test
+    fun `adds code challenge as a coookie to the auth redirect`() {
+        assertThat(persistence.assignCodeVerifier(Response(TEMPORARY_REDIRECT), CodeVerifier("codeVerifierValue")), equalTo(
+            Response(TEMPORARY_REDIRECT).cookie(Cookie("prefixCodeChallenge", "codeVerifierValue",
                 expires = expectedCookieExpiry, path = "/"))
         ))
     }

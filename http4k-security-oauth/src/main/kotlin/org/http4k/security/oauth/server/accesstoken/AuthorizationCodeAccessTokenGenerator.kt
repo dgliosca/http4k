@@ -11,15 +11,18 @@ import org.http4k.security.AccessTokenDetails
 import org.http4k.security.oauth.server.AccessTokenError
 import org.http4k.security.oauth.server.AccessTokens
 import org.http4k.security.oauth.server.AuthorizationCode
+import org.http4k.security.oauth.server.AuthorizationCodeDetails
 import org.http4k.security.oauth.server.AuthorizationCodeExpired
 import org.http4k.security.oauth.server.AuthorizationCodes
 import org.http4k.security.oauth.server.ClientId
 import org.http4k.security.oauth.server.ClientIdMismatch
 import org.http4k.security.oauth.server.IdTokens
+import org.http4k.security.oauth.server.InvalidClientAssertion
 import org.http4k.security.oauth.server.MissingAuthorizationCode
 import org.http4k.security.oauth.server.MissingRedirectUri
 import org.http4k.security.oauth.server.RedirectUriMismatch
 import org.http4k.security.oauth.server.TokenRequest
+import org.http4k.security.openid.CodeVerifier
 import java.time.Clock
 
 class AuthorizationCodeAccessTokenGenerator(
@@ -33,12 +36,15 @@ class AuthorizationCodeAccessTokenGenerator(
 
     fun generate(request: AuthorizationCodeAccessTokenRequest): Result<AccessTokenDetails, AccessTokenError> {
         val code = request.authorizationCode
-        val codeDetails = authorizationCodes.detailsFor(code)
+        val codeDetails: AuthorizationCodeDetails = authorizationCodes.detailsFor(code)
 
         return when {
             codeDetails.expiresAt.isBefore(clock.instant()) -> Failure(AuthorizationCodeExpired)
             codeDetails.clientId != request.clientId -> Failure(ClientIdMismatch)
             codeDetails.redirectUri != request.redirectUri -> Failure(RedirectUriMismatch)
+            codeDetails.codeChallenge != null && request.codeVerifier?.value != codeDetails.codeChallenge.value -> Failure(
+                InvalidClientAssertion
+            )
             else -> accessTokens.create(codeDetails.clientId, request, code)
                 .map { token ->
                     when {
@@ -56,7 +62,8 @@ class AuthorizationCodeAccessTokenGenerator(
                 clientSecret = tokenRequest.clientSecret ?: "",
                 redirectUri = tokenRequest.redirectUri ?: return Failure(MissingRedirectUri),
                 scopes = tokenRequest.scopes,
-                authorizationCode = AuthorizationCode(tokenRequest.code ?: return Failure(MissingAuthorizationCode))
+                authorizationCode = AuthorizationCode(tokenRequest.code ?: return Failure(MissingAuthorizationCode)),
+                codeVerifier = tokenRequest.codeVerifier
             ))
         }
     }
@@ -67,5 +74,6 @@ data class AuthorizationCodeAccessTokenRequest(
     val clientSecret: String,
     val redirectUri: Uri,
     val scopes: List<String>,
-    val authorizationCode: AuthorizationCode
+    val authorizationCode: AuthorizationCode,
+    val codeVerifier: CodeVerifier?
 )

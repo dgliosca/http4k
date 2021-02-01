@@ -7,6 +7,7 @@ import org.http4k.core.Uri
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.invalidateCookie
+import org.http4k.security.openid.CodeVerifier
 import org.http4k.security.openid.IdToken
 import org.http4k.security.openid.Nonce
 import java.time.Clock
@@ -29,6 +30,10 @@ class InsecureCookieBasedOAuthPersistence(cookieNamePrefix: String,
 
     private val accessTokenCookieName = "${cookieNamePrefix}AccessToken"
 
+    private val codeChallengeName = "${cookieNamePrefix}CodeChallenge"
+
+    private val codeVerifierName = "${cookieNamePrefix}CodeVerifier"
+
     override fun retrieveCsrf(request: Request) = request.cookie(csrfName)?.value?.let(::CrossSiteRequestForgeryToken)
 
     override fun retrieveToken(request: Request): AccessToken? = request.cookie(accessTokenCookieName)?.value?.let { AccessToken(it) }
@@ -36,6 +41,8 @@ class InsecureCookieBasedOAuthPersistence(cookieNamePrefix: String,
     override fun retrieveNonce(request: Request): Nonce? = request.cookie(nonceName)?.value?.let { Nonce(it) }
 
     override fun retrieveOriginalUri(request: Request): Uri? = request.cookie(originalUriName)?.value?.let { Uri.of(it) }
+
+    override fun retrieveCodeVerifier(request: Request): CodeVerifier? = request.cookie(codeVerifierName)?.value?.let { CodeVerifier(it) }
 
     override fun assignCsrf(redirect: Response, csrf: CrossSiteRequestForgeryToken) = redirect.cookie(expiring(csrfName, csrf.value))
 
@@ -54,6 +61,10 @@ class InsecureCookieBasedOAuthPersistence(cookieNamePrefix: String,
         .invalidateCookie(accessTokenCookieName)
         .invalidateCookie(nonceName)
         .invalidateCookie(originalUriName)
+
+    override fun assignCodeVerifier(redirect: Response, codeVerifier: CodeVerifier): Response {
+        return redirect.cookie(expiring(codeVerifierName, codeVerifier.value))
+    }
 
     private fun expiring(name: String, value: String) = Cookie(name, value, expires = LocalDateTime.ofInstant(clock.instant().plus(cookieValidity), clock.zone), path = "/")
 }

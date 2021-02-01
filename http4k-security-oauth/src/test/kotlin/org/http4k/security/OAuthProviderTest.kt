@@ -44,7 +44,7 @@ class OAuthProviderTest {
         { it.query("response_mode", "form_post") },
         { CrossSiteRequestForgeryToken("randomCsrf") },
         { Nonce("randomNonce") },
-        responseType
+        responseType = responseType,
     )
 
     @Test

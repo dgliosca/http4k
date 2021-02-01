@@ -4,6 +4,7 @@ import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.Status.Companion.FORBIDDEN
 import org.http4k.core.Uri
+import org.http4k.security.openid.CodeVerifier
 import org.http4k.security.openid.IdToken
 import org.http4k.security.openid.Nonce
 
@@ -69,4 +70,14 @@ interface OAuthPersistence {
      * CSRF or failure occurring when calling into the end-service for the access-token.
      */
     fun authFailureResponse() = Response(FORBIDDEN)
+
+    /**
+     * Assign a code challenge to this OIDC auth redirection (to the end-service) response.
+     */
+    fun assignCodeVerifier(redirect: Response, codeVerifier: CodeVerifier): Response
+
+    /**
+     * Retrieve the stored code_challenge for this user request
+     */
+    fun retrieveCodeVerifier(request: Request): CodeVerifier?
 }

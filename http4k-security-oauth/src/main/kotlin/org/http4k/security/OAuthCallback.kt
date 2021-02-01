@@ -22,7 +22,8 @@ class OAuthCallback(
                     val idToken = request.queryOrFragmentParameter("id_token")?.let { IdToken(it) }
                     if (hasValidNonceInIdToken(request, idToken)) {
                         idToken?.let { idTokenConsumer.consumeFromAuthorizationResponse(it) }
-                        accessTokenFetcher.fetch(code)
+                        val theCodeVerifier = oAuthPersistence.retrieveCodeVerifier(request)
+                        accessTokenFetcher.fetch(code, theCodeVerifier)
                             ?.let { tokenDetails ->
                                 tokenDetails.idToken?.also(idTokenConsumer::consumeFromAccessTokenResponse)
                                 val originalUri = oAuthPersistence.retrieveOriginalUri(request)?.toString() ?: "/"

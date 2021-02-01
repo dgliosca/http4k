@@ -21,6 +21,8 @@ import org.http4k.hamkrest.hasBody
 import org.http4k.hamkrest.hasStatus
 import org.http4k.security.InsecureCookieBasedOAuthPersistence
 import org.http4k.security.ResponseType.CodeIdToken
+import org.http4k.security.openid.CodeChallenge
+import org.http4k.security.openid.CodeVerifier
 import org.http4k.security.openid.IdToken
 import org.http4k.security.openid.Nonce
 import org.junit.jupiter.api.Test
@@ -78,5 +80,33 @@ class OpenIdServerTest {
 
         val postAuthResponse = browserWithRedirection(Request(POST, authRequestUri).form("some", "credentials"))
         assertThat(postAuthResponse, hasStatus(FORBIDDEN))
+    }
+
+    @Test
+    fun `can follow authorization code flow with PKCE protection`() {
+        val clientOauthPersistence = InsecureCookieBasedOAuthPersistence("oauthTest")
+        val authenticationServer = customOauthAuthorizationServer()
+        val tokenConsumer = InMemoryIdTokenConsumer()
+        val consumerApp = oauthClientApp(authenticationServer, CodeIdToken, tokenConsumer, listOf("openid", "name", "age"), clientOauthPersistence)
+
+        val browser = ClientFilters.Cookies().then(authenticationServer + consumerApp)
+
+        val browserWithRedirection = ClientFilters.FollowRedirects().then(browser)
+
+        val preAuthResponse = browser(Request(GET, "/a-protected-resource"))
+        val authRequestUri = preAuthResponse.header("location")!!
+
+        val suppliedCodeChallenge = Uri.of(authRequestUri).queries().findSingle("code_challenge")?.let { CodeChallenge(it) }
+        val request = preAuthResponse.cookies().fold(Request(GET, "/"), { acc, c -> acc.cookie(c) })
+        val codeVerifier = clientOauthPersistence.retrieveCodeVerifier(request)
+        assertThat(codeVerifier, present())
+        assertThat(suppliedCodeChallenge, present())
+        assertThat(suppliedCodeChallenge?.value, equalTo(codeVerifier?.value))
+
+        val loginPageResponse = browser(Request(GET, authRequestUri))
+        assertThat(loginPageResponse, hasStatus(OK) and hasBody("Please authenticate"))
+
+        val postAuthResponse = browserWithRedirection(Request(POST, authRequestUri).form("some", "credentials"))
+        assertThat(postAuthResponse, hasStatus(OK) and hasBody("user resource"))
     }
 }

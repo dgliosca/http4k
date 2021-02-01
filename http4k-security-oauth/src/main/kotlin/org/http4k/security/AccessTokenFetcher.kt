@@ -19,11 +19,14 @@ import org.http4k.lens.uri
 import org.http4k.lens.webForm
 import org.http4k.security.AccessTokenFetcher.Companion.Forms.clientId
 import org.http4k.security.AccessTokenFetcher.Companion.Forms.code
+import org.http4k.security.AccessTokenFetcher.Companion.Forms.codeVerifier
 import org.http4k.security.AccessTokenFetcher.Companion.Forms.grantType
 import org.http4k.security.AccessTokenFetcher.Companion.Forms.redirectUri
 import org.http4k.security.AccessTokenFetcher.Companion.Forms.requestForm
 import org.http4k.security.AccessTokenFetcher.Companion.Forms.responseForm
 import org.http4k.security.oauth.server.refreshtoken.RefreshToken
+import org.http4k.security.openid.CodeChallenge
+import org.http4k.security.openid.CodeVerifier
 import org.http4k.security.openid.IdToken
 
 class AccessTokenFetcher(
@@ -32,7 +35,7 @@ class AccessTokenFetcher(
     private val providerConfig: OAuthProviderConfig,
     private val accessTokenFetcherAuthenticator: AccessTokenFetcherAuthenticator
 ) {
-    fun fetch(theCode: String): AccessTokenDetails? = api(
+    fun fetch(theCode: String, theCodeVerifier: CodeVerifier? = null): AccessTokenDetails? = api(
         Request(POST, providerConfig.tokenPath)
             .with(
                 requestForm of WebForm()
@@ -40,7 +43,8 @@ class AccessTokenFetcher(
                         grantType of "authorization_code",
                         redirectUri of callbackUri,
                         clientId of providerConfig.credentials.user,
-                        code of theCode
+                        code of theCode,
+                        codeVerifier of theCodeVerifier?.value
                     )
             )
             .authenticate(accessTokenFetcherAuthenticator)
@@ -111,6 +115,7 @@ class AccessTokenFetcher(
             val clientId = FormField.string().required("client_id")
             val redirectUri = FormField.uri().required("redirect_uri")
             val code = FormField.string().required("code")
+            val codeVerifier = FormField.string().optional("code_verifier")
 
             val requestForm = Body.webForm(Validator.Strict, grantType, clientId, redirectUri, code).toLens()
         }

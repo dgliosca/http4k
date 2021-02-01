@@ -71,7 +71,7 @@ fun main() {
             tokenClient,
             Uri.of("http://localhost:8000/my-callback"),
             listOf("name", "age"),
-            persistence
+            persistence,
         )
 
         return routes(

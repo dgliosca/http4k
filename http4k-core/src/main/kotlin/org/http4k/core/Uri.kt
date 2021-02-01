@@ -61,11 +61,14 @@ data class Uri(val scheme: String, val userInfo: String, val host: String, val p
         })
         .appendIfNotBlank(query, "?", query)
         .appendIfNotBlank(fragment, "#", fragment).toString()
+
+
 }
 
 fun Uri.removeQuery(name: String) = copy(query = query.toParameters().filterNot { it.first == name }.toUrlFormEncoded())
 
 fun Uri.query(name: String, value: String?): Uri = copy(query = query.toParameters().plus(name to value).toUrlFormEncoded())
+fun Uri.queryNotNull(name: String, value: String?): Uri = if (value != null) copy(query = query.toParameters().plus(name to value).toUrlFormEncoded()) else this
 
 fun String.toPathEncoded() = URLEncoder.encode(this, UTF_8)
 fun String.toPathDecoded() = URLDecoder.decode(this, UTF_8)

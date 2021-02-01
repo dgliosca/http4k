@@ -17,6 +17,8 @@ import org.http4k.security.CrossSiteRequestForgeryToken
 import org.http4k.security.OAuthPersistence
 import org.http4k.security.OAuthProvider
 import org.http4k.security.OAuthProviderConfig
+import org.http4k.security.openid.CodeChallenge
+import org.http4k.security.openid.CodeVerifier
 import org.http4k.security.openid.IdToken
 import org.http4k.security.openid.Nonce
 import org.http4k.server.SunHttp
@@ -38,7 +40,7 @@ fun main() {
         ApacheClient(),
         callbackUri,
         listOf("emailScope", "nameScope", "familyScope"),
-        CustomOAuthPersistence()
+        CustomOAuthPersistence(),
     )
 
     val app: HttpHandler =
@@ -62,6 +64,7 @@ class CustomOAuthPersistence : OAuthPersistence {
     var csrf: CrossSiteRequestForgeryToken? = null
     var accessToken: AccessToken? = null
     var originalUri: Uri? = null
+    var codeChallenge: CodeChallenge? = null
 
     override fun retrieveCsrf(request: Request): CrossSiteRequestForgeryToken? = csrf
 
@@ -85,6 +88,13 @@ class CustomOAuthPersistence : OAuthPersistence {
     override fun retrieveOriginalUri(request: Request): Uri? = originalUri
 
     override fun retrieveToken(request: Request): AccessToken? = accessToken
+
+    override fun assignCodeVerifier(redirect: Response, codeVerifier: CodeVerifier?): Response {
+        this.codeChallenge = codeVerifier
+        return redirect.header("action", "assignCodeChallenge")
+    }
+
+    override fun retrieveCodeVerifier(request: Request): CodeChallenge? = this.codeChallenge
 
     override fun assignToken(request: Request, redirect: Response, accessToken: AccessToken, idToken: IdToken?): Response {
         this.accessToken = accessToken

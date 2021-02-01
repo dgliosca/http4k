@@ -6,6 +6,7 @@ import org.http4k.security.ResponseType
 import org.http4k.security.ResponseType.Code
 import org.http4k.security.State
 import org.http4k.security.oauth.server.request.RequestObject
+import org.http4k.security.openid.CodeChallenge
 import org.http4k.security.openid.Nonce
 import org.http4k.security.openid.RequestJwtContainer
 
@@ -16,6 +17,7 @@ data class AuthRequest(
     val state: State?,
     val responseType: ResponseType = Code,
     val nonce: Nonce? = null,
+    val codeChallenge: CodeChallenge? = null,
     val responseMode: ResponseMode? = null,
     val request: RequestJwtContainer? = null,
     val requestObject: RequestObject? = null,

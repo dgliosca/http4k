@@ -3,6 +3,7 @@ package org.http4k.security.oauth.server
 import org.http4k.core.Uri
 import org.http4k.security.oauth.server.accesstoken.GrantType
 import org.http4k.security.oauth.server.refreshtoken.RefreshToken
+import org.http4k.security.openid.CodeVerifier
 
 data class TokenRequest(
     val grantType: GrantType,
@@ -13,4 +14,5 @@ data class TokenRequest(
     val scopes: List<String>,
     val clientAssertionType: Uri?,
     val clientAssertion: String?,
-    val refreshToken: RefreshToken?)
+    val refreshToken: RefreshToken?,
+    val codeVerifier: CodeVerifier?)

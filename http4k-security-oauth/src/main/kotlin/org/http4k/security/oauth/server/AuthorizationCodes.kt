@@ -7,6 +7,7 @@ import org.http4k.core.Uri
 import org.http4k.security.ResponseType
 import org.http4k.security.ResponseType.Code
 import org.http4k.security.State
+import org.http4k.security.openid.CodeChallenge
 import org.http4k.security.openid.Nonce
 import java.time.Instant
 
@@ -34,5 +35,6 @@ data class AuthorizationCodeDetails(
     val state: State?,
     val isOIDC: Boolean,
     val responseType: ResponseType = Code,
-    val nonce: Nonce? = null
+    val nonce: Nonce? = null,
+    val codeChallenge: CodeChallenge? = null
 )

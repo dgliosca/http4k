@@ -20,7 +20,7 @@ fun OAuthProvider.Companion.auth0(
         client,
         callbackUri,
         listOf("openid"),
-        oAuthPersistence
+        oAuthPersistence,
     )
 
 fun OAuthProvider.Companion.dropbox(client: HttpHandler, credentials: Credentials, callbackUri: Uri, oAuthPersistence: OAuthPersistence): OAuthProvider =
@@ -29,7 +29,8 @@ fun OAuthProvider.Companion.dropbox(client: HttpHandler, credentials: Credential
         client,
         callbackUri,
         listOf(""),
-        oAuthPersistence)
+        oAuthPersistence,
+    )
 
 fun OAuthProvider.Companion.facebook(client: HttpHandler, credentials: Credentials, callbackUri: Uri, oAuthPersistence: OAuthPersistence, scopes: List<String> = listOf("email")): OAuthProvider =
     OAuthProvider(
@@ -37,7 +38,7 @@ fun OAuthProvider.Companion.facebook(client: HttpHandler, credentials: Credentia
         client,
         callbackUri,
         scopes,
-        oAuthPersistence
+        oAuthPersistence,
     )
 
 fun OAuthProvider.Companion.google(client: HttpHandler, credentials: Credentials, callbackUri: Uri, oAuthPersistence: OAuthPersistence, scopes: List<String> = listOf("openid")): OAuthProvider =
@@ -48,7 +49,7 @@ fun OAuthProvider.Companion.google(client: HttpHandler, credentials: Credentials
         scopes,
         oAuthPersistence,
         { it.query("nonce", SECURE_CSRF().value) },
-        SECURE_CSRF
+        SECURE_CSRF,
     )
 
 fun OAuthProvider.Companion.soundCloud(client: HttpHandler, credentials: Credentials, callbackUri: Uri, oAuthPersistence: OAuthPersistence): OAuthProvider =
@@ -57,7 +58,7 @@ fun OAuthProvider.Companion.soundCloud(client: HttpHandler, credentials: Credent
         client,
         callbackUri,
         listOf(""),
-        oAuthPersistence
+        oAuthPersistence,
     )
 
 fun OAuthProvider.Companion.gitHub(client: HttpHandler, credentials: Credentials, callbackUri: Uri, oAuthPersistence: OAuthPersistence, scopes: List<String> = listOf()): OAuthProvider =
@@ -66,5 +67,5 @@ fun OAuthProvider.Companion.gitHub(client: HttpHandler, credentials: Credentials
         client,
         callbackUri,
         scopes,
-        oAuthPersistence
+        oAuthPersistence,
     )

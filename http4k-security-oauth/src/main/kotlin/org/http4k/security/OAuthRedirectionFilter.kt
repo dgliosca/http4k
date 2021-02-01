@@ -5,12 +5,13 @@ import org.http4k.core.HttpHandler
 import org.http4k.core.Response
 import org.http4k.core.Status.Companion.TEMPORARY_REDIRECT
 import org.http4k.core.Uri
-import org.http4k.core.toUrlFormEncoded
 import org.http4k.core.with
 import org.http4k.lens.Header.LOCATION
 import org.http4k.security.CrossSiteRequestForgeryToken.Companion.SECURE_CSRF
 import org.http4k.security.oauth.server.AuthRequest
 import org.http4k.security.oauth.server.ClientId
+import org.http4k.security.openid.CodeVerifier
+import org.http4k.security.openid.PKCECodesGenerator
 import org.http4k.security.openid.Nonce
 import org.http4k.security.openid.Nonce.Companion.SECURE_NONCE
 import org.http4k.security.openid.NonceGenerator
@@ -19,8 +20,9 @@ class OAuthRedirectionFilter(
     private val providerConfig: OAuthProviderConfig,
     private val callbackUri: Uri,
     private val scopes: List<String>,
-    private val generateCrsf: CsrfGenerator = SECURE_CSRF,
+    private val generateCsrf: CsrfGenerator = SECURE_CSRF,
     private val nonceGenerator: NonceGenerator = SECURE_NONCE,
+    private val pkceCodesGenerator: PKCECodesGenerator,
     private val modifyState: (Uri) -> Uri,
     private val oAuthPersistence: OAuthPersistence,
     private val responseType: ResponseType,
@@ -29,9 +31,10 @@ class OAuthRedirectionFilter(
 
     override fun invoke(next: HttpHandler): HttpHandler = {
         if (oAuthPersistence.retrieveToken(it) != null) next(it) else {
-            val csrf = generateCrsf()
+            val csrf = generateCsrf()
             val state = State(csrf.value)
             val nonce = generateNonceIfRequired()
+            val pkceCodes = pkceCodesGenerator.generatePKCECodes()
 
             val authRequest = AuthRequest(
                 ClientId(providerConfig.credentials.user),
@@ -39,12 +42,26 @@ class OAuthRedirectionFilter(
                 callbackUri,
                 state,
                 responseType,
-                nonce
+                nonce,
+                pkceCodes?.codeChallenge
             )
 
-            val redirect = Response(TEMPORARY_REDIRECT)
-                .with(LOCATION of modifyState(redirectionBuilder(providerConfig.authUri, authRequest, state, nonce)))
-            assignNonceIfRequired(oAuthPersistence.assignOriginalUri(oAuthPersistence.assignCsrf(redirect, csrf), it.uri), nonce)
+            val redirect = oAuthPersistence.assignOriginalUri(oAuthPersistence.assignCsrf(
+                Response(TEMPORARY_REDIRECT)
+                    .with(
+                        LOCATION of modifyState(
+                            redirectionBuilder(
+                                providerConfig.authUri,
+                                authRequest,
+                                state,
+                                nonce,
+                                pkceCodes?.codeChallenge
+                            )
+                        )
+                    ), csrf
+            ), it.uri)
+            assignNonceIfRequired(redirect, nonce)
+            assignCodeVerifierIfRequired(redirect, pkceCodes?.codeVerifier)
         }
     }
 
@@ -53,6 +70,13 @@ class OAuthRedirectionFilter(
     private fun assignNonceIfRequired(redirect: Response, nonce: Nonce?): Response =
         if (nonce != null) {
             oAuthPersistence.assignNonce(redirect, nonce)
+        } else {
+            redirect
+        }
+
+    private fun assignCodeVerifierIfRequired(redirect: Response, codeVerifier: CodeVerifier?): Response =
+        if (codeVerifier != null) {
+            oAuthPersistence.assignCodeVerifier(redirect, codeVerifier)
         } else {
             redirect
         }
